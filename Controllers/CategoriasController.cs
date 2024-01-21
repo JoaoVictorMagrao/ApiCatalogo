@@ -20,31 +20,49 @@ namespace APICatalago.Controllers
         [HttpGet("produtos")]
         public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
         {
-            return _context.Categorias.Include(p=> p.Produtos).ToList();
+            return _context.Categorias.Include(p=> p.Produtos).Where(c => c.CategoriaId <= 5).ToList();
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Categoria>> Get()
         {
-            return _context.Categorias.ToList();
+            try
+            {
+                return _context.Categorias.AsNoTracking().ToList();
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Ocorreu um problema ao tratar a sua solicitação.");
+            }
+            
         }
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult<Categoria> Get(int id)
         {
-            var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
-            if (categoria is null)
+            try
             {
-                return NotFound("Categoria não encontrado...");
+                var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+                if (categoria is null)
+                {
+                    return NotFound("Categoria não encontrado...");
+                }
+                return categoria;
             }
-            return categoria;
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                   "Ocorreu um problema ao tratar a sua solicitação.");
+            }
+            
         }
 
         [HttpPost]
         public ActionResult Post(Categoria categoria)
         {
             if (categoria is null)
-                return BadRequest();
+                return BadRequest("Dados Inválidos");
 
             _context.Categorias.Add(categoria);
             _context.SaveChanges();
@@ -58,7 +76,7 @@ namespace APICatalago.Controllers
         {
             if (id != categoria.CategoriaId)
             {
-                return BadRequest();
+                return BadRequest("Dados Inválidos");
             }
             _context.Entry(categoria).State = EntityState.Modified;
             _context.SaveChanges();
@@ -73,7 +91,7 @@ namespace APICatalago.Controllers
 
             if (categoria is null)
             {
-                return NotFound("Categoria não localizado...");
+                return NotFound($"Categoria  com id ={id} não localizado...");
             }
             _context.Categorias.Remove(categoria);
             _context.SaveChanges();
